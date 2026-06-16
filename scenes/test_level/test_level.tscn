@@ -1,0 +1,148 @@
+[gd_scene load_steps=6 format=3 uid="uid://btestlevel001"]
+
+[ext_resource type="PackedScene" uid="uid://bfrogplayer01" path="res://scenes/player/player.tscn" id="1_player"]
+[ext_resource type="Script" path="res://scenes/test_level/test_dummy.gd" id="2_dummy"]
+
+[sub_resource type="RectangleShape2D" id="floor_shape"]
+size = Vector2(400, 16)
+
+[sub_resource type="RectangleShape2D" id="platform_shape"]
+size = Vector2(64, 8)
+
+[sub_resource type="RectangleShape2D" id="dummy_hurtbox_shape"]
+size = Vector2(16, 16)
+
+[node name="TestLevel" type="Node2D"]
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector2(160, 120)
+
+[node name="Floor" type="StaticBody2D" parent="."]
+position = Vector2(160, 172)
+collision_layer = 1
+collision_mask = 0
+
+[node name="FloorShape" type="CollisionShape2D" parent="Floor"]
+shape = SubResource("floor_shape")
+
+[node name="FloorVisual" type="ColorRect" parent="Floor"]
+offset_left = -200.0
+offset_top = -8.0
+offset_right = 200.0
+offset_bottom = 8.0
+color = Color(0.35, 0.25, 0.15, 1)
+
+[node name="Platform1" type="StaticBody2D" parent="."]
+position = Vector2(80, 130)
+collision_layer = 1
+collision_mask = 0
+
+[node name="PlatformShape" type="CollisionShape2D" parent="Platform1"]
+shape = SubResource("platform_shape")
+
+[node name="PlatformVisual" type="ColorRect" parent="Platform1"]
+offset_left = -32.0
+offset_top = -4.0
+offset_right = 32.0
+offset_bottom = 4.0
+color = Color(0.45, 0.35, 0.2, 1)
+
+[node name="Platform2" type="StaticBody2D" parent="."]
+position = Vector2(240, 105)
+collision_layer = 1
+collision_mask = 0
+
+[node name="PlatformShape" type="CollisionShape2D" parent="Platform2"]
+shape = SubResource("platform_shape")
+
+[node name="PlatformVisual" type="ColorRect" parent="Platform2"]
+offset_left = -32.0
+offset_top = -4.0
+offset_right = 32.0
+offset_bottom = 4.0
+color = Color(0.45, 0.35, 0.2, 1)
+
+[node name="Platform3" type="StaticBody2D" parent="."]
+position = Vector2(160, 75)
+collision_layer = 1
+collision_mask = 0
+
+[node name="PlatformShape" type="CollisionShape2D" parent="Platform3"]
+shape = SubResource("platform_shape")
+
+[node name="PlatformVisual" type="ColorRect" parent="Platform3"]
+offset_left = -32.0
+offset_top = -4.0
+offset_right = 32.0
+offset_bottom = 4.0
+color = Color(0.5, 0.4, 0.25, 1)
+
+[node name="Wall_Left" type="StaticBody2D" parent="."]
+position = Vector2(-40, 90)
+collision_layer = 1
+collision_mask = 0
+
+[node name="WallShape" type="CollisionShape2D" parent="Wall_Left"]
+shape = SubResource("floor_shape")
+rotation = 1.5708
+
+[node name="WallVisual" type="ColorRect" parent="Wall_Left"]
+offset_left = -8.0
+offset_top = -200.0
+offset_right = 8.0
+offset_bottom = 200.0
+color = Color(0.3, 0.2, 0.12, 1)
+
+[node name="Wall_Right" type="StaticBody2D" parent="."]
+position = Vector2(360, 90)
+collision_layer = 1
+collision_mask = 0
+
+[node name="WallShape" type="CollisionShape2D" parent="Wall_Right"]
+shape = SubResource("floor_shape")
+rotation = 1.5708
+
+[node name="WallVisual" type="ColorRect" parent="Wall_Right"]
+offset_left = -8.0
+offset_top = -200.0
+offset_right = 8.0
+offset_bottom = 200.0
+color = Color(0.3, 0.2, 0.12, 1)
+
+[node name="Background" type="ColorRect" parent="."]
+z_index = -10
+offset_left = -100.0
+offset_top = -100.0
+offset_right = 420.0
+offset_bottom = 280.0
+color = Color(0.08, 0.06, 0.12, 1)
+
+[node name="TestDummy" type="StaticBody2D" parent="."]
+position = Vector2(240, 160)
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("2_dummy")
+
+[node name="DummyVisual" type="ColorRect" parent="TestDummy"]
+offset_left = -8.0
+offset_top = -16.0
+offset_right = 8.0
+offset_bottom = 0.0
+color = Color(0.8, 0.2, 0.2, 1)
+
+[node name="DummyHurtbox" type="Area2D" parent="TestDummy"]
+collision_layer = 16
+collision_mask = 0
+
+[node name="DummyHurtboxShape" type="CollisionShape2D" parent="TestDummy/DummyHurtbox"]
+position = Vector2(0, -8)
+shape = SubResource("dummy_hurtbox_shape")
+
+[node name="UI_HintLabel" type="Label" parent="."]
+offset_left = 5.0
+offset_top = 3.0
+offset_right = 315.0
+offset_bottom = 45.0
+theme_override_font_sizes/font_size = 6
+text = "A/D: Move | SPACE: Jump (double!) | W/S: Look | E/LMB: Melee Attack | F: Tongue Attack"
+horizontal_alignment = 1

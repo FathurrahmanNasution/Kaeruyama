@@ -1,0 +1,18 @@
+# Godot-specific ignores
+.godot/
+/android/
+*.translation
+
+# Ignored export presets (contains keystores, passwords, export paths)
+# export_presets.cfg
+
+# Mono-specific ignores (if C# is used)
+.mono/
+data_*/
+mono_crash_*.json
+
+# VS Code / IDE settings (contains user-specific paths and local editor state)
+.vscode/
+.idea/
+*.tmp
+*.log
