@@ -110,6 +110,9 @@ var shake_duration: float = 0.0
 # Damage tracking (biar satu enemy nggak kena 2x per swing)
 var _hit_enemies_this_swing: Array = []
 
+# Game feel timers
+var time_since_run: float = 99.0
+
 # Debug variables
 var _last_printed_state: State = State.IDLE
 var _last_printed_vel: Vector2 = Vector2.ZERO
@@ -194,6 +197,12 @@ func _physics_process(delta: float) -> void:
 			_perform_jump()
 			jump_buffered = false
 	
+	# --- Update run timer ---
+	if current_state == State.RUN:
+		time_since_run = 0.0
+	else:
+		time_since_run += delta
+
 	# --- Update state & animation ---
 	_update_state(input_dir)
 	_update_animation()
@@ -220,8 +229,8 @@ func _physics_process(delta: float) -> void:
 		var total_time = extension_time + retraction_time
 		
 		# Lock mouth origin using vomit direction vector to prevent mouth shift if player flips mid-vomit
-		var vomit_mouth_x = 4.0 if vomit_direction.x > 0 else -4.0
-		var vomit_mouth_pos = Vector2(vomit_mouth_x, -18.0)
+		var vomit_mouth_x = 6.0 if vomit_direction.x > 0 else -6.0
+		var vomit_mouth_pos = Vector2(vomit_mouth_x, -11.0)
 		
 		if vomit_tongue_progress <= extension_time:
 			var t = vomit_tongue_progress / extension_time
@@ -633,6 +642,9 @@ func _apply_bulge_scale() -> void:
 	if swallowed_object != null:
 		# Belly bulge scale (1.15x normal scale of 0.65)
 		sprite.scale = Vector2(0.75, 0.75)
+	else:
+		if not is_attacking:
+			sprite.scale = Vector2(0.65, 0.65)
 
 
 # =============================================================
@@ -776,26 +788,34 @@ func _update_animation() -> void:
 	if is_attacking:
 		return
 	
+	# If we are currently playing sprint_stop, and we are in IDLE state, let it finish playing
+	if anim_player.current_animation.begins_with("sprint_stop") and anim_player.is_playing() and current_state == State.IDLE:
+		return
+		
+	var carrying := swallowed_object != null
 	var anim_base: String
 	var speed_scale: float = 1.0
 	
 	match current_state:
 		State.IDLE:
-			anim_base = "idle"
+			if (previous_state == State.RUN or time_since_run < 0.15) and not carrying:
+				anim_base = "sprint_stop"
+			else:
+				anim_base = "fat_idle" if carrying else "idle"
 		State.WALK:
-			anim_base = "run"      # reuse walk cycle
-			speed_scale = 0.8       # play slower
+			anim_base = "fat_walk" if carrying else "walk"
+			speed_scale = 0.8
 		State.RUN:
-			anim_base = "run"      # reuse walk cycle
-			speed_scale = 1.5       # play faster
+			anim_base = "fat_walk" if carrying else "sprint"
+			speed_scale = 1.2 if carrying else 1.0
 		State.JUMP:
-			anim_base = "jump"
+			anim_base = "fat_jump" if carrying else "jump"
 		State.FALL:
-			anim_base = "fall"
+			anim_base = "fat_fall" if carrying else "fall"
 		State.SWING, State.GRAPPLE:
-			anim_base = "jump"      # swing uses jump pose
+			anim_base = "swing"
 		_:
-			anim_base = "idle"
+			anim_base = "fat_idle" if carrying else "idle"
 			
 	anim_player.speed_scale = speed_scale
 	
@@ -810,10 +830,13 @@ func _update_facing(input_dir: float) -> void:
 	if is_attacking:
 		return
 	
-	if input_dir > 0:
-		facing_right = true
-	elif input_dir < 0:
-		facing_right = false
+	if is_grappled:
+		facing_right = grapple_anchor.x > global_position.x
+	else:
+		if input_dir > 0:
+			facing_right = true
+		elif input_dir < 0:
+			facing_right = false
 		
 	# Mirror the sprite texture using flip_h
 	sprite.flip_h = not facing_right
@@ -840,6 +863,10 @@ func _on_animation_finished(anim_name: StringName) -> void:
 	elif name_str.begins_with("attack_3"):
 		_deactivate_all_hitboxes()
 		_reset_combo()
+	elif name_str.begins_with("sprint_stop"):
+		if current_state == State.IDLE:
+			var suffix = "_right" if facing_right else "_left"
+			anim_player.play("idle" + suffix)
 
 
 func _on_combo_timer_timeout() -> void:
@@ -850,15 +877,15 @@ func _on_combo_timer_timeout() -> void:
 func _draw() -> void:
 	if tongue_rope.visible and tongue_rope.points.size() > 1:
 		# Draw the circular tongue tip at the end of the tongue Line2D
-		draw_circle(tongue_rope.points[1], 4.5, Color(0.88, 0.33, 0.42, 1))
+		draw_circle(tongue_rope.points[1], 2.5, Color(0.88, 0.33, 0.42, 1))
 
 
 func get_mouth_local_position() -> Vector2:
 	# Sprite height is 48px, scale is 0.65.
-	# Frog mouth is roughly at y = -18px locally.
+	# Frog mouth is roughly at y = -11px locally.
 	# Slightly offset horizontally based on facing direction.
-	var offset_x = 3.5 if facing_right else -3.5
-	return Vector2(offset_x, -18.0)
+	var offset_x = 6.0 if facing_right else -6.0
+	return Vector2(offset_x, -11.0)
 
 
 func _find_closest_swallowable_target() -> Node2D:
