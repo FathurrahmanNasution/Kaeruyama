@@ -7,8 +7,8 @@ extends CharacterBody2D
 ## ============================================================
 
 # === MOVEMENT ===
-@export var speed: float = 100.0        # walk speed
-@export var run_speed: float = 180.0    # run speed
+@export var speed: float = 100.0 # walk speed
+@export var run_speed: float = 180.0 # run speed
 @export var acceleration: float = 900.0
 @export var friction: float = 800.0
 @export var gravity_up: float = 700.0
@@ -20,7 +20,7 @@ extends CharacterBody2D
 @export var double_jump_velocity: float = -240.0
 @export var coyote_time: float = 0.1
 @export var jump_buffer_time: float = 0.12
-@export var jump_cut_multiplier: float = 0.4  # variable jump height
+@export var jump_cut_multiplier: float = 0.4 # variable jump height
 
 # === CAMERA LOOK ===
 @export var camera_look_offset: float = 50.0
@@ -30,7 +30,7 @@ extends CharacterBody2D
 @export var melee_damage: int = 10
 @export var finisher_damage: int = 20
 @export var tongue_damage: int = 10
-@export var combo_window: float = 0.5  # detik untuk input combo berikutnya
+@export var combo_window: float = 0.5 # detik untuk input combo berikutnya
 @export var attack_cooldown: float = 0.15
 @export var max_tongue_length: float = 70.0
 
@@ -50,7 +50,6 @@ extends CharacterBody2D
 @onready var hurtbox: Area2D = $Hurtbox
 @onready var coyote_timer: Timer = $CoyoteTimer
 @onready var jump_buffer_timer: Timer = $JumpBufferTimer
-@onready var combo_timer: Timer = $ComboTimer
 @onready var camera: Camera2D = $Camera2D
 @onready var hit_particles: CPUParticles2D = $HitParticles
 @onready var tongue_rope: Line2D = $TongueRope
@@ -64,10 +63,10 @@ enum State {
 	FALL,
 	GRAPPLE,
 	SWING,
-	ATTACK_1,
-	ATTACK_2,
-	ATTACK_3,
+	ATTACK,
 	TONGUE_ATTACK,
+	LOOK_DOWN,
+	GET_HIT,
 }
 
 var current_state: State = State.IDLE
@@ -79,6 +78,7 @@ var was_on_floor: bool = false
 var can_coyote_jump: bool = false
 var jump_buffered: bool = false
 var facing_right: bool = true
+var is_hurt: bool = false
 
 # Grapple status
 var is_grappled: bool = false
@@ -95,10 +95,8 @@ var has_swallowed_this_attack: bool = false
 var tongue_target_pos: Vector2 = Vector2.ZERO
 
 # Combat
-var combo_count: int = 0  # 0 = no combo, 1 = hit1, 2 = hit2, 3 = finisher
-var can_combo: bool = false
 var is_attacking: bool = false
-var attack_anim_finished: bool = false
+var is_doing_tongue_attack: bool = false
 var can_attack: bool = true
 
 # Camera look
@@ -124,8 +122,6 @@ func _ready() -> void:
 	coyote_timer.one_shot = true
 	jump_buffer_timer.wait_time = jump_buffer_time
 	jump_buffer_timer.one_shot = true
-	combo_timer.wait_time = combo_window
-	combo_timer.one_shot = true
 	
 	# Disable hitboxes by default
 	hitbox_shape.disabled = true
@@ -135,11 +131,11 @@ func _ready() -> void:
 	hitbox.area_entered.connect(_on_hitbox_area_entered)
 	tongue_hitbox.area_entered.connect(_on_tongue_area_entered)
 	hurtbox.area_entered.connect(_on_hurtbox_area_entered)
-	combo_timer.timeout.connect(_on_combo_timer_timeout)
 	anim_player.animation_finished.connect(_on_animation_finished)
 
 
 func _physics_process(delta: float) -> void:
+
 	# --- Grapple Firing Input ---
 	_handle_grapple_input()
 	
@@ -196,6 +192,9 @@ func _physics_process(delta: float) -> void:
 		if jump_buffered:
 			_perform_jump()
 			jump_buffered = false
+		else:
+			var suffix = "_right" if facing_right else "_left"
+			anim_player.play("land" + suffix)
 	
 	# --- Update run timer ---
 	if current_state == State.RUN:
@@ -268,7 +267,7 @@ func _physics_process(delta: float) -> void:
 		else:
 			is_vomiting_tongue = false
 			tongue_rope.visible = false
-	elif is_attacking and combo_count == 3 and not has_swallowed_this_attack:
+	elif is_attacking and not has_swallowed_this_attack:
 		# Update target position to track the target in real time
 		if swallowing_target != null and is_instance_valid(swallowing_target):
 			tongue_target_pos = to_local(swallowing_target.global_position)
@@ -277,7 +276,7 @@ func _physics_process(delta: float) -> void:
 		var ext_point = Vector2.ZERO
 		
 		# If swallow is triggered at peak (anim_pos >= 0.2)
-		if anim_pos >= 0.2 and swallowing_target != null and not has_swallowed_this_attack:
+		if anim_pos >= 0.2 and swallowing_target != null and not has_swallowed_this_attack and is_doing_tongue_attack:
 			_swallow_target(swallowing_target, null)
 			
 		if anim_pos < 0.2:
@@ -354,14 +353,26 @@ func _perform_jump() -> void:
 	velocity.y = jump_velocity
 	can_double_jump = true
 	is_attacking = false
-	_reset_combo()
+	is_doing_tongue_attack = false
+	_deactivate_all_hitboxes()
+	
+	# Force jump animation to start
+	var anim_base = "fat_jump" if swallowed_object != null else "jump"
+	var suffix = "_right" if facing_right else "_left"
+	anim_player.play(anim_base + suffix)
 
 
 func _perform_double_jump() -> void:
 	velocity.y = double_jump_velocity
 	can_double_jump = false
 	is_attacking = false
-	_reset_combo()
+	is_doing_tongue_attack = false
+	_deactivate_all_hitboxes()
+	
+	# Force jump animation to start on double jump
+	var anim_base = "fat_jump" if swallowed_object != null else "jump"
+	var suffix = "_right" if facing_right else "_left"
+	anim_player.play(anim_base + suffix)
 
 
 # =============================================================
@@ -458,7 +469,7 @@ func _handle_swing_physics(input_dir: float, delta: float) -> void:
 		var n = to_anchor.normalized()
 		var tangent = Vector2(-n.y, n.x)
 		if tangent.x * input_dir < 0:
-			tangent = -tangent
+			tangent = - tangent
 		velocity += tangent * swing_acceleration * delta
 		
 	# Draw the Line2D tongue rope
@@ -469,7 +480,7 @@ func _handle_swing_physics(input_dir: float, delta: float) -> void:
 
 
 # =============================================================
-# ATTACK SYSTEM (3-Hit Combo + Tongue + Spit/Vomit)
+# ATTACK SYSTEM (Standard Attack + Tongue Swallow + Spit/Vomit)
 # =============================================================
 func _handle_attack() -> void:
 	if not (Input.is_action_just_pressed("attack") or Input.is_action_just_pressed("tongue_attack")):
@@ -484,65 +495,45 @@ func _handle_attack() -> void:
 		_vomit_object()
 		return
 	
+	if not can_attack or is_attacking or is_hurt:
+		return
+		
 	if Input.is_action_just_pressed("attack"):
-		if not can_attack:
-			return
-		
-		if can_combo and combo_count < 2:
-			combo_count += 1
-			can_combo = false
-			_start_attack()
-		elif not is_attacking:
-			combo_count = 1
-			_start_attack()
-			
+		_start_attack(false) # standard attack (melee)
 	elif Input.is_action_just_pressed("tongue_attack"):
-		if not can_attack:
-			return
-		
-		if can_combo or not is_attacking:
-			combo_count = 3
-			can_combo = false
-			_start_attack()
+		_start_attack(true) # tongue swallow attack
 
 
-func _start_attack() -> void:
+func _start_attack(is_tongue: bool) -> void:
 	is_attacking = true
-	attack_anim_finished = false
+	is_doing_tongue_attack = is_tongue
 	_hit_enemies_this_swing.clear()
+	has_swallowed_this_attack = false
+	
+	# Auto-aim closest target for both attacks since both use the tongue
+	var target = _find_closest_swallowable_target()
+	if target != null:
+		swallowing_target = target
+		if target.global_position.x > global_position.x:
+			facing_right = true
+		else:
+			facing_right = false
+		sprite.flip_h = not facing_right
+		tongue_target_pos = to_local(target.global_position)
+	else:
+		swallowing_target = null
+		var dir_sign = 1.0 if facing_right else -1.0
+		var mouth_pos = get_mouth_local_position()
+		tongue_target_pos = mouth_pos + Vector2(max_tongue_length * dir_sign, 0.0)
+		
+	# Both attacks use the tongue hitbox since they both extend the tongue
+	_activate_tongue_hitbox()
 	
 	var suffix = "_right" if facing_right else "_left"
-	
-	match combo_count:
-		1:
-			_activate_melee_hitbox()
-			anim_player.play("attack_1" + suffix)
-		2:
-			_activate_melee_hitbox()
-			anim_player.play("attack_2" + suffix)
-		3:
-			has_swallowed_this_attack = false
-			# Auto-aim closest swallowable target
-			var target = _find_closest_swallowable_target()
-			if target != null:
-				swallowing_target = target
-				if target.global_position.x > global_position.x:
-					facing_right = true
-				else:
-					facing_right = false
-				sprite.flip_h = not facing_right
-				tongue_target_pos = to_local(target.global_position)
-			else:
-				swallowing_target = null
-				var dir_sign = 1.0 if facing_right else -1.0
-				var mouth_pos = get_mouth_local_position()
-				tongue_target_pos = mouth_pos + Vector2(max_tongue_length * dir_sign, 0.0)
-				
-			_activate_tongue_hitbox()
-			suffix = "_right" if facing_right else "_left"
-			anim_player.play("attack_3" + suffix)
-		_:
-			_reset_combo()
+	if not is_doing_tongue_attack:
+		anim_player.play("attack_2" + suffix)
+	else:
+		anim_player.play("attack_3" + suffix)
 
 
 func _activate_melee_hitbox() -> void:
@@ -560,20 +551,10 @@ func _deactivate_all_hitboxes() -> void:
 	tongue_shape.disabled = true
 
 
-func _reset_combo() -> void:
-	combo_count = 0
-	can_combo = false
-	is_attacking = false
-	_deactivate_all_hitboxes()
-	_hit_enemies_this_swing.clear()
-
-
 func _get_current_damage() -> int:
-	match combo_count:
-		1: return melee_damage      # 10
-		2: return melee_damage      # 10
-		3: return finisher_damage   # 20
-		_: return melee_damage
+	if is_doing_tongue_attack:
+		return finisher_damage
+	return melee_damage
 
 
 # =============================================================
@@ -659,8 +640,8 @@ func _on_tongue_area_entered(area: Area2D) -> void:
 	if body == self:
 		return
 		
-	# Try to swallow first if empty belly and it's a valid swallowable target
-	if swallowed_object == null:
+	# Try to swallow first if empty belly, it's a valid target, and we are doing a tongue attack
+	if swallowed_object == null and is_doing_tongue_attack:
 		if body.has_method("take_damage") and body.name != "Player":
 			_swallow_target(body, area)
 			return # swallowed! skip regular damage dealing
@@ -681,11 +662,11 @@ func _deal_damage_to(area: Area2D) -> void:
 	
 	if body.has_method("take_damage"):
 		body.take_damage(damage)
-		print("[COMBAT] Hit ", body.name, " for ", damage, " damage! (combo ", combo_count, ")")
+		print("[COMBAT] Hit ", body.name, " for ", damage, " damage!")
 		
 		# === JUICY COMBAT FEEDBACK ===
 		hit_particles.global_position = area.global_position
-		if combo_count == 3:
+		if is_doing_tongue_attack:
 			hit_particles.color = Color(1.0, 0.35, 0.45) # pink tongue splat
 			shake_camera(4.0, 0.15)
 			trigger_hit_stop(0.08)
@@ -712,9 +693,18 @@ func _on_hurtbox_area_entered(area: Area2D) -> void:
 
 func take_damage(amount: int) -> void:
 	print("[PLAYER] Took ", amount, " damage!")
-	sprite.modulate = Color.RED
-	await get_tree().create_timer(0.1).timeout
-	sprite.modulate = Color(1, 1, 1, 1)
+	is_attacking = false
+	is_doing_tongue_attack = false
+	_deactivate_all_hitboxes()
+	
+	is_hurt = true
+	# Force transition to GET_HIT state immediately
+	_update_state(0.0)
+	_update_animation()
+	
+	# Wait for the duration of the hit animation (0.25 seconds)
+	await get_tree().create_timer(0.25).timeout
+	is_hurt = false
 
 
 # =============================================================
@@ -722,7 +712,7 @@ func take_damage(amount: int) -> void:
 # =============================================================
 func _handle_camera_look(delta: float) -> void:
 	if Input.is_action_pressed("look_up"):
-		camera_target_offset_y = -camera_look_offset
+		camera_target_offset_y = - camera_look_offset
 	elif Input.is_action_pressed("look_down"):
 		camera_target_offset_y = camera_look_offset
 	else:
@@ -759,11 +749,15 @@ func trigger_hit_stop(duration: float) -> void:
 func _update_state(input_dir: float) -> void:
 	previous_state = current_state
 	
+	if is_hurt:
+		current_state = State.GET_HIT
+		return
+		
 	if is_attacking:
-		match combo_count:
-			1: current_state = State.ATTACK_1
-			2: current_state = State.ATTACK_2
-			3: current_state = State.ATTACK_3
+		if is_doing_tongue_attack:
+			current_state = State.TONGUE_ATTACK
+		else:
+			current_state = State.ATTACK
 		return
 		
 	if is_grappled:
@@ -780,6 +774,8 @@ func _update_state(input_dir: float) -> void:
 			current_state = State.RUN
 		else:
 			current_state = State.WALK
+	elif Input.is_action_pressed("look_down"):
+		current_state = State.LOOK_DOWN
 	else:
 		current_state = State.IDLE
 
@@ -814,6 +810,8 @@ func _update_animation() -> void:
 			anim_base = "fat_fall" if carrying else "fall"
 		State.SWING, State.GRAPPLE:
 			anim_base = "swing"
+		State.LOOK_DOWN:
+			anim_base = "look_down"
 		_:
 			anim_base = "fat_idle" if carrying else "idle"
 			
@@ -823,11 +821,14 @@ func _update_animation() -> void:
 	var anim_name = anim_base + suffix
 	
 	if anim_player.current_animation != anim_name:
-		anim_player.play(anim_name)
+		if (anim_name.begins_with("jump") or anim_name.begins_with("fat_jump") or anim_name.begins_with("fall") or anim_name.begins_with("fat_fall")) and anim_player.assigned_animation == anim_name:
+			pass
+		else:
+			anim_player.play(anim_name)
 
 
 func _update_facing(input_dir: float) -> void:
-	if is_attacking:
+	if is_attacking or is_hurt:
 		return
 	
 	if is_grappled:
@@ -854,24 +855,14 @@ func _update_facing(input_dir: float) -> void:
 # =============================================================
 func _on_animation_finished(anim_name: StringName) -> void:
 	var name_str = str(anim_name)
-	if name_str.begins_with("attack_1") or name_str.begins_with("attack_2"):
+	if name_str.begins_with("attack"):
 		_deactivate_all_hitboxes()
-		attack_anim_finished = true
-		can_combo = true
-		combo_timer.start()
 		is_attacking = false
-	elif name_str.begins_with("attack_3"):
-		_deactivate_all_hitboxes()
-		_reset_combo()
-	elif name_str.begins_with("sprint_stop"):
+		is_doing_tongue_attack = false
+	elif name_str.begins_with("sprint_stop") or name_str.begins_with("land"):
 		if current_state == State.IDLE:
 			var suffix = "_right" if facing_right else "_left"
 			anim_player.play("idle" + suffix)
-
-
-func _on_combo_timer_timeout() -> void:
-	if can_combo:
-		_reset_combo()
 
 
 func _draw() -> void:

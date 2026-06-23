@@ -112,18 +112,18 @@ tracks/3/keys = {
 
 [sub_resource type="Animation" id="anim_attack2left"]
 resource_name = "attack_2_left"
-length = 0.4
+length = 0.5
 tracks/0/type = "value"
 tracks/0/imported = false
-tracks/0/enabled = true
+tracks/0/enabled = false
 tracks/0/path = NodePath("Sprite2D:modulate")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.08, 0.2, 0.4),
+"times": PackedFloat32Array(0, 0.1, 0.25, 0.5),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 0,
-"values": [Color(1, 1, 1, 1), Color(1, 0.6, 0.3, 1), Color(1, 0.7, 0.3, 1), Color(1, 1, 1, 1)]
+"values": [Color(1, 1, 1, 1), Color(1, 0.3, 0.3, 1), Color(1, 0.2, 0.5, 1), Color(1, 1, 1, 1)]
 }
 tracks/1/type = "value"
 tracks/1/imported = false
@@ -132,19 +132,19 @@ tracks/1/path = NodePath("Sprite2D:scale")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
-"times": PackedFloat32Array(0, 0.1, 0.25, 0.4),
-"transitions": PackedFloat32Array(1, 1, 1, 1),
+"times": PackedFloat32Array(0, 0.1, 0.25, 0.35, 0.5),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
 "update": 0,
-"values": [Vector2(0.65, 0.65), Vector2(0.5525, 0.78), Vector2(0.715, 0.585), Vector2(0.65, 0.65)]
+"values": [Vector2(0.65, 0.65), Vector2(0.52, 0.845), Vector2(0.91, 0.52), Vector2(0.7475, 0.6175), Vector2(0.65, 0.65)]
 }
 tracks/2/type = "value"
 tracks/2/imported = false
 tracks/2/enabled = true
-tracks/2/path = NodePath("Hitbox/HitboxShape:disabled")
+tracks/2/path = NodePath("TongueHitbox/TongueShape:disabled")
 tracks/2/interp = 1
 tracks/2/loop_wrap = true
 tracks/2/keys = {
-"times": PackedFloat32Array(0, 0.08, 0.28),
+"times": PackedFloat32Array(0, 0.2, 0.4),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
 "values": [true, false, true]
@@ -159,23 +159,23 @@ tracks/3/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [9]
+"values": [16]
 }
 
 [sub_resource type="Animation" id="anim_attack2right"]
 resource_name = "attack_2_right"
-length = 0.4
+length = 0.5
 tracks/0/type = "value"
 tracks/0/imported = false
-tracks/0/enabled = true
+tracks/0/enabled = false
 tracks/0/path = NodePath("Sprite2D:modulate")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.08, 0.2, 0.4),
+"times": PackedFloat32Array(0, 0.1, 0.25, 0.5),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 0,
-"values": [Color(1, 1, 1, 1), Color(1, 0.6, 0.3, 1), Color(1, 0.7, 0.3, 1), Color(1, 1, 1, 1)]
+"values": [Color(1, 1, 1, 1), Color(1, 0.3, 0.3, 1), Color(1, 0.2, 0.5, 1), Color(1, 1, 1, 1)]
 }
 tracks/1/type = "value"
 tracks/1/imported = false
@@ -184,19 +184,19 @@ tracks/1/path = NodePath("Sprite2D:scale")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
-"times": PackedFloat32Array(0, 0.1, 0.25, 0.4),
-"transitions": PackedFloat32Array(1, 1, 1, 1),
+"times": PackedFloat32Array(0, 0.1, 0.25, 0.35, 0.5),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
 "update": 0,
-"values": [Vector2(0.65, 0.65), Vector2(0.5525, 0.78), Vector2(0.715, 0.585), Vector2(0.65, 0.65)]
+"values": [Vector2(0.65, 0.65), Vector2(0.52, 0.845), Vector2(0.91, 0.52), Vector2(0.7475, 0.6175), Vector2(0.65, 0.65)]
 }
 tracks/2/type = "value"
 tracks/2/imported = false
 tracks/2/enabled = true
-tracks/2/path = NodePath("Hitbox/HitboxShape:disabled")
+tracks/2/path = NodePath("TongueHitbox/TongueShape:disabled")
 tracks/2/interp = 1
 tracks/2/loop_wrap = true
 tracks/2/keys = {
-"times": PackedFloat32Array(0, 0.08, 0.28),
+"times": PackedFloat32Array(0, 0.2, 0.4),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
 "values": [true, false, true]
@@ -211,7 +211,7 @@ tracks/3/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [9]
+"values": [16]
 }
 
 [sub_resource type="Animation" id="anim_attack3left"]
@@ -714,6 +714,74 @@ tracks/0/keys = {
 "values": [25, 5, 12, 19, 26]
 }
 
+[sub_resource type="Animation" id="anim_hit_left"]
+resource_name = "hit_left"
+length = 0.25
+loop_mode = 0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 0
+tracks/0/update_mode = 1
+tracks/0/keys = {
+"times": PackedFloat32Array(0.0),
+"transitions": PackedFloat32Array(1),
+"values": [14]
+}
+
+
+[sub_resource type="Animation" id="anim_hit_right"]
+resource_name = "hit_right"
+length = 0.25
+loop_mode = 0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 0
+tracks/0/update_mode = 1
+tracks/0/keys = {
+"times": PackedFloat32Array(0.0),
+"transitions": PackedFloat32Array(1),
+"values": [14]
+}
+
+
+[sub_resource type="Animation" id="anim_look_down_left"]
+resource_name = "look_down_left"
+length = 0.1
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 0
+tracks/0/update_mode = 1
+tracks/0/keys = {
+"times": PackedFloat32Array(0.0),
+"transitions": PackedFloat32Array(1),
+"values": [22]
+}
+
+
+[sub_resource type="Animation" id="anim_look_down_right"]
+resource_name = "look_down_right"
+length = 0.1
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 0
+tracks/0/update_mode = 1
+tracks/0/keys = {
+"times": PackedFloat32Array(0.0),
+"transitions": PackedFloat32Array(1),
+"values": [22]
+}
+
+
 [sub_resource type="AnimationLibrary" id="anim_library"]
 _data = {
 &"attack_1_left": SubResource("anim_attack1left"),
@@ -732,12 +800,16 @@ _data = {
 &"fat_jump_right": SubResource("anim_fat_jump_right"),
 &"fat_walk_left": SubResource("anim_fat_walk_left"),
 &"fat_walk_right": SubResource("anim_fat_walk_right"),
+&"hit_left": SubResource("anim_hit_left"),
+&"hit_right": SubResource("anim_hit_right"),
 &"idle_left": SubResource("anim_idle_left"),
 &"idle_right": SubResource("anim_idle_right"),
 &"jump_left": SubResource("anim_jump_left"),
 &"jump_right": SubResource("anim_jump_right"),
 &"land_left": SubResource("anim_land_left"),
 &"land_right": SubResource("anim_land_right"),
+&"look_down_left": SubResource("anim_look_down_left"),
+&"look_down_right": SubResource("anim_look_down_right"),
 &"sprint_left": SubResource("anim_sprint_left"),
 &"sprint_right": SubResource("anim_sprint_right"),
 &"sprint_stop_left": SubResource("anim_sprint_stop_left"),
